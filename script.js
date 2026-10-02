@@ -1,4 +1,4 @@
-// Select Elements
+// --- SELECT ELEMENTS ---
 const form = document.querySelector("#note-form");
 const input = document.querySelector("#note-input");
 const categorySelect = document.querySelector("#note-category");
@@ -7,48 +7,76 @@ const searchInput = document.querySelector("#search-input");
 const notesList = document.querySelector("#notes-list");
 const countDisplay = document.querySelector("#note-count");
 
-// State
+// --- STATE MANAGEMENT ---
 let notes = JSON.parse(localStorage.getItem("quicknotes")) || [];
 
-// Render Function
+// --- SAFE RENDER FUNCTION (No innerHTML for user data!) ---
 function render(filterText = "") {
-    notesList.innerHTML = "";
-    const filtered = notes.filter(n => n.text.toLowerCase().includes(filterText.toLowerCase()));
+    // Clear list safely
+    notesList.innerHTML = ""; 
     
-    // Update Count
-    if (notes.length === 0) countDisplay.textContent = "You have no notes yet.";
-    else if (notes.length === 1) countDisplay.textContent = "You have 1 note.";
-    else countDisplay.textContent = `You have ${notes.length} notes.`;
+    // Filter notes based on search
+    const filtered = notes.filter(n => 
+        n.text.toLowerCase().includes(filterText.toLowerCase())
+    );
+    
+    // Update Count Display
+    if (notes.length === 0) {
+        countDisplay.textContent = "You have no notes yet.";
+    } else if (notes.length === 1) {
+        countDisplay.textContent = "You have 1 note.";
+    } else {
+        countDisplay.textContent = `You have ${notes.length} notes.`;
+    }
 
-    // Show empty search message
+    // Handle Empty Search Results
     if (filterText && filtered.length === 0) {
-        notesList.innerHTML = "<li style='color:#777; padding:10px;'>No notes match your search.</li>";
+        const li = document.createElement("li");
+        li.textContent = "No notes match your search.";
+        li.style.color = "#777";
+        li.style.padding = "10px";
+        notesList.appendChild(li);
         return;
     }
 
-    // Build Cards
+    // Build Note Cards Safely
     filtered.forEach(note => {
         const li = document.createElement("li");
         li.className = `note-card category-${note.category}`;
         
-        li.innerHTML = `
-            <div>${note.text}</div>
-            <div class="note-meta">
-                <span>${note.category.toUpperCase()} • ${note.createdAt}</span>
-                <button class="delete-btn" data-id="${note.id}">Delete</button>
-            </div>
-        `;
+        // ✅ SAFE: Use textContent for user-generated text
+        const textDiv = document.createElement("div");
+        textDiv.textContent = note.text; 
+        
+        // Meta Info Container
+        const metaDiv = document.createElement("div");
+        metaDiv.className = "note-meta";
+        
+        const span = document.createElement("span");
+        span.textContent = `${note.category.toUpperCase()} • ${note.createdAt}`;
+        
+        // Delete Button with Data Attribute
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-btn";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.dataset.id = note.id; 
+        
+        // Assemble Card
+        metaDiv.appendChild(span);
+        metaDiv.appendChild(deleteBtn);
+        li.appendChild(textDiv);
+        li.appendChild(metaDiv);
         notesList.appendChild(li);
     });
 }
 
-// Add Note
+// --- ADD NOTE WITH VALIDATION ---
 form.addEventListener("submit", (e) => {
     e.preventDefault();
     const text = input.value.trim();
     const category = categorySelect.value;
     
-    // Validation
+    // Validation Logic
     if (!text) {
         errorMsg.textContent = "Please type a note first.";
         return;
@@ -58,11 +86,12 @@ form.addEventListener("submit", (e) => {
         return;
     }
     
-    errorMsg.textContent = ""; // Clear error
+    // Clear Error & Add Note
+    errorMsg.textContent = ""; 
     notes.push({
         id: Date.now(),
-        text,
-        category,
+        text: text,
+        category: category,
         createdAt: new Date().toLocaleString()
     });
     
@@ -71,7 +100,7 @@ form.addEventListener("submit", (e) => {
     input.focus();
 });
 
-// Delete Note (Event Delegation)
+// --- DELETE NOTE (Event Delegation) ---
 notesList.addEventListener("click", (e) => {
     if (e.target.classList.contains("delete-btn")) {
         const id = Number(e.target.dataset.id);
@@ -80,16 +109,16 @@ notesList.addEventListener("click", (e) => {
     }
 });
 
-// Helper
-function saveAndRender() {
-    localStorage.setItem("quicknotes", JSON.stringify(notes));
-    render(searchInput.value);
-}
-
-// Initial Load
-saveAndRender();
-
-// Search Feature
+// --- SEARCH FEATURE ---
 searchInput.addEventListener("input", (e) => {
     render(e.target.value);
 });
+
+// --- HELPER: SAVE & REFRESH UI ---
+function saveAndRender() {
+    localStorage.setItem("quicknotes", JSON.stringify(notes));
+    render(searchInput.value); // Maintains current search filter
+}
+
+// --- INITIAL LOAD ---
+saveAndRender();
