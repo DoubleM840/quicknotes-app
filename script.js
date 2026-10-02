@@ -88,3 +88,8 @@ function saveAndRender() {
 
 // Initial Load
 saveAndRender();
+
+// Search Feature
+searchInput.addEventListener("input", (e) => {
+    render(e.target.value);
+});
